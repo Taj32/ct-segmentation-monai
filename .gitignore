@@ -157,6 +157,7 @@ ENV/
 env.bak/
 venv.bak/
 
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -216,3 +217,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# -------------------------------
+# Custom rules
+# -------------------------------
+mlflow.db
+summer_01_env/
