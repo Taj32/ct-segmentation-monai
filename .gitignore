@@ -223,6 +223,7 @@ __marimo__/
 # -------------------------------
 mlflow.db
 summer_01_env/
-best_model.pth
 mlruns/
 prediction_overlay.png
+prediction_photos/
+checkpoints/
