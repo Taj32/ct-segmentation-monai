@@ -33,7 +33,7 @@ model_path = "checkpoints/best_model.pth"
 if not os.path.exists(model_path):
     os.makedirs("checkpoints", exist_ok=True)
     model_path = hf_hub_download(
-        repo_id="Hipps/ct-segmentation-spleen",
+        repo_id="Hipps/ct-segmenetation-spleen", 
         filename="best_model.pth",
         local_dir="checkpoints"
     )
