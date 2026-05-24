@@ -39,7 +39,7 @@ if not os.path.exists(model_path):
     )
 
 # load model once at startup
-device = torch.device("cuda:0")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = UNet(
     spatial_dims=3, # configure model to use 3D convolutions
     in_channels=1, # input: grayscale image
