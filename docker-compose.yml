@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  #launch container from dockerfile in current directory
+  seg-api:
+    build: .
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ./checkpoints:/app/checkpoints
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+
+  # track experiments with mlflow, store data in mlruns directory
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    ports:
+      - "5000:5000"
+    command: mlflow server --host 0.0.0.0
+    volumes:
+      - ./mlruns:/mlruns

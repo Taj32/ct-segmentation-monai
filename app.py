@@ -14,10 +14,18 @@ from monai.transforms import (
 )
 from monai.inferers import sliding_window_inference
 import matplotlib.patches as mpatches
-
+import SimpleITK as sitk
 
 
 app = FastAPI(title="CT Segmentation API")
+
+
+# -- Helper Functions --
+def dicom_to_nifti(dicom_path: str, output_path: str) -> str:
+    """Convert a DICOM file to NIfTI format."""
+    image = sitk.ReadImage(dicom_path)
+    sitk.WriteImage(image, output_path)
+    return output_path
 
 # load model once at startup
 device = torch.device("cuda:0")
@@ -51,22 +59,37 @@ preprocess = Compose([
 post_pred = AsDiscrete(argmax=True, to_onehot=2)
 keep_largest = KeepLargestConnectedComponent(applied_labels=[1])
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/segment")
 async def segment(file: UploadFile = File(...)):
     # validate file type
-    if not file.filename.endswith((".nii", ".nii.gz")):
+    if not file.filename.endswith((".nii", ".nii.gz", ".dcm")):
         raise HTTPException(
             status_code=400,
-            detail="Only .nii or .nii.gz files accepted"
+            detail="Only .nii, .nii.gz, or .dcm files accepted"
         )
 
-    # save upload to temp file
-    suffix = ".nii.gz" if file.filename.endswith(".nii.gz") else ".nii"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        tmp.write(await file.read())
+    is_dicom = file.filename.endswith(".dcm")
+    suffix = ".dcm" if is_dicom else (
+        ".nii.gz" if file.filename.endswith(".nii.gz") else ".nii"
+    )
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False, mode='wb') as tmp:
+        content = await file.read()
+        tmp.write(content)
         tmp_path = tmp.name
 
     try:
+        
+        if is_dicom:
+            nifti_path = tmp_path.replace(".dcm", ".nii.gz")
+            dicom_to_nifti(tmp_path, nifti_path)
+            os.unlink(tmp_path)  # delete original DICOM
+            tmp_path = nifti_path
+        
         # preprocess
         data = preprocess([{"image": tmp_path}])
         input_tensor = data[0]["image"].unsqueeze(0).to(device)
@@ -129,4 +152,5 @@ async def segment(file: UploadFile = File(...)):
         )
 
     finally:
-        os.unlink(tmp_path)
+         if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
