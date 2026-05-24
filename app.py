@@ -15,6 +15,7 @@ from monai.transforms import (
 from monai.inferers import sliding_window_inference
 import matplotlib.patches as mpatches
 import SimpleITK as sitk
+from huggingface_hub import hf_hub_download
 
 
 app = FastAPI(title="CT Segmentation API")
@@ -27,6 +28,16 @@ def dicom_to_nifti(dicom_path: str, output_path: str) -> str:
     sitk.WriteImage(image, output_path)
     return output_path
 
+# download model from HF hub if not already present
+model_path = "checkpoints/best_model.pth"
+if not os.path.exists(model_path):
+    os.makedirs("checkpoints", exist_ok=True)
+    model_path = hf_hub_download(
+        repo_id="Hipps/ct-segmentation-spleen",
+        filename="best_model.pth",
+        local_dir="checkpoints"
+    )
+
 # load model once at startup
 device = torch.device("cuda:0")
 model = UNet(
@@ -38,9 +49,8 @@ model = UNet(
     num_res_units=2,
     norm=Norm.BATCH, # use batch normalization for better stability
 ).to(device)
-model.load_state_dict(torch.load(
-    "checkpoints/best_model.pth", map_location=device
-))
+
+model.load_state_dict(torch.load(model_path, map_location=device))
 model.eval()
 
 # ── preprocessing transforms ──
