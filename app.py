@@ -16,9 +16,15 @@ from monai.inferers import sliding_window_inference
 import matplotlib.patches as mpatches
 import SimpleITK as sitk
 from huggingface_hub import hf_hub_download
+from contextlib import asynccontextmanager
 
 
-app = FastAPI(title="CT Segmentation API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Application ready")
+    yield
+
+app = FastAPI(title="CT Segmentation API", lifespan=lifespan)
 
 
 # -- Helper Functions --
@@ -30,13 +36,13 @@ def dicom_to_nifti(dicom_path: str, output_path: str) -> str:
 
 # download model from HF hub if not already present
 model_path = "checkpoints/best_model.pth"
-if not os.path.exists(model_path):
-    os.makedirs("checkpoints", exist_ok=True)
-    model_path = hf_hub_download(
-        repo_id="Hipps/ct-segmenetation-spleen", 
-        filename="best_model.pth",
-        local_dir="checkpoints"
-    )
+# if not os.path.exists(model_path):
+#     os.makedirs("checkpoints", exist_ok=True)
+#     model_path = hf_hub_download(
+#         repo_id="Hipps/ct-segmenetation-spleen", 
+#         filename="best_model.pth",
+#         local_dir="checkpoints"
+#     )
 
 # load model once at startup
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -68,6 +74,10 @@ preprocess = Compose([
 
 post_pred = AsDiscrete(argmax=True, to_onehot=2)
 keep_largest = KeepLargestConnectedComponent(applied_labels=[1])
+
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "CT Segmentation API is running"}
 
 @app.get("/health")
 def health():

@@ -227,3 +227,4 @@ mlruns/
 prediction_overlay.png
 prediction_photos/
 checkpoints/
+.gitattributes
