@@ -1,3 +1,5 @@
+import time
+
 import streamlit as st
 import requests
 import matplotlib.pyplot as plt
@@ -39,11 +41,14 @@ if uploaded_file is not None:
     if st.button("Run Segmentation", type="primary"):
         with st.spinner("Running inference... this may take a few minutes on CPU"):
             try:
+                start_time = time.time()
                 response = requests.post(
                     f"{api_url}/segment",
                     files={"file": (uploaded_file.name, uploaded_file.getvalue())},
                     timeout=600
                 )
+                latency = time.time() - start_time
+                st.session_state["latency_history"].append(latency)
 
                 if response.status_code == 200:
                     # display the overlay image
@@ -145,11 +150,14 @@ if uploaded_file_viewer is not None:
     if st.button("Run Slice Analysis", type="primary", key="slice_btn"):
         with st.spinner("Running inference... please wait"):
             try:
+                start_time = time.time()
                 response = requests.post(
                     f"{api_url}/segment_data",
                     files={"file": (uploaded_file_viewer.name, uploaded_file_viewer.getvalue())},
                     timeout=600
                 )
+                latency = time.time() - start_time
+                st.session_state["latency_history"].append(latency)
 
                 if response.status_code == 200:
                     # load numpy data
@@ -231,6 +239,37 @@ if "ct" in st.session_state:
     with col3:
         spleen_voxels = int(mask.sum())
         st.metric("Spleen Voxels", f"{spleen_voxels:,}")
+
+# ── inference latency monitor ──
+st.header("⚡ Inference Latency Monitor")
+
+# initialize session state for latency tracking
+if "latency_history" not in st.session_state:
+    st.session_state["latency_history"] = []
+
+# display latency metrics if we have history
+if st.session_state["latency_history"]:
+    latencies = st.session_state["latency_history"]
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Last Request", f"{latencies[-1]:.2f}s")
+    with col2:
+        st.metric("Average", f"{np.mean(latencies):.2f}s")
+    with col3:
+        st.metric("Min / Max", f"{min(latencies):.2f}s / {max(latencies):.2f}s")
+
+    # rolling chart
+    fig, ax = plt.subplots(figsize=(10, 3))
+    ax.plot(latencies, color="#1F4E8E", linewidth=2, marker="o")
+    ax.set_xlabel("Request #")
+    ax.set_ylabel("Latency (seconds)")
+    ax.set_title("Inference Latency History")
+    ax.grid(True, alpha=0.3)
+    st.pyplot(fig)
+else:
+    st.info("No requests made yet — run a segmentation to see latency metrics.")
+
 
 # ── model info ──
 st.header("ℹ️ Model Information")
