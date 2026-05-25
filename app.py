@@ -18,6 +18,9 @@ import SimpleITK as sitk
 from huggingface_hub import hf_hub_download
 from contextlib import asynccontextmanager
 
+import io
+import numpy as np
+from fastapi.responses import JSONResponse, Response
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -85,6 +88,9 @@ def health():
 
 @app.post("/segment")
 async def segment(file: UploadFile = File(...)):
+    
+    
+
     # validate file type
     if not file.filename.endswith((".nii", ".nii.gz", ".dcm")):
         raise HTTPException(
@@ -173,4 +179,73 @@ async def segment(file: UploadFile = File(...)):
 
     finally:
          if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+            
+@app.post("/segment_data")
+async def segment_data(file: UploadFile = File(...)):
+    if not file.filename.endswith((".nii", ".nii.gz", ".dcm")):
+        raise HTTPException(
+            status_code=400,
+            detail="Only .nii, .nii.gz, or .dcm files accepted"
+        )
+
+    is_dicom = file.filename.endswith(".dcm")
+    suffix = ".dcm" if is_dicom else (
+        ".nii.gz" if file.filename.endswith(".nii.gz") else ".nii"
+    )
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False, mode='wb') as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        if is_dicom:
+            nifti_path = tmp_path.replace(".dcm", ".nii.gz")
+            dicom_to_nifti(tmp_path, nifti_path)
+            os.unlink(tmp_path)
+            tmp_path = nifti_path
+
+        # preprocess
+        data = preprocess([{"image": tmp_path}])
+        input_tensor = data[0]["image"].unsqueeze(0).to(device)
+
+        # run inference
+        with torch.no_grad():
+            output = sliding_window_inference(
+                input_tensor, (96, 96, 96), 4, model, overlap=0.75, mode="gaussian"
+            )
+
+        # post process
+        output_discrete = torch.argmax(output, dim=1, keepdim=True)
+        output_cleaned = keep_largest(output_discrete[0])
+
+        vol = output_cleaned[0].cpu().numpy()
+        ct = input_tensor[0, 0].cpu().numpy()
+
+        spleen_slices = [
+            i for i in range(vol.shape[2]) if vol[:, :, i].sum() > 0
+        ]
+
+        if not spleen_slices:
+            return JSONResponse({"message": "No spleen detected"})
+
+        # save as compressed numpy binary
+        buf = io.BytesIO()
+        np.savez_compressed(
+            buf,
+            ct=ct,
+            mask=vol,
+            spleen_slices=np.array(spleen_slices)
+        )
+        buf.seek(0)
+
+        return Response(
+            content=buf.read(),
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": "attachment; filename=segmentation.npz"}
+        )
+
+    finally:
+        if os.path.exists(tmp_path):
             os.unlink(tmp_path)
