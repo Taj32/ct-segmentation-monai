@@ -86,7 +86,7 @@ if uploaded_file is not None:
                 st.error(f"Error: {str(e)}")
                 
 # ── MLflow metrics panel ──
-# st.header("📊 Model Training Metrics")
+st.header("📊 Model Training Metrics")
 
 # mlflow_url = st.sidebar.text_input(
 #     "MLflow Tracking URI",
@@ -222,7 +222,7 @@ if uploaded_file_viewer is not None:
                 st.error(f"Error: {str(e)}")
 
 # show slider if data is loaded
-if "ct" in st.session_state:
+if "ct" in st.session_state and st.session_state["ct"] is not None:
     ct = st.session_state["ct"]
     mask = st.session_state["mask"]
     spleen_slices = st.session_state["spleen_slices"]
@@ -281,6 +281,8 @@ if "ct" in st.session_state:
     with col3:
         spleen_voxels = int(mask.sum())
         st.metric("Spleen Voxels", f"{spleen_voxels:,}")
+else:
+    st.info("Upload a CT scan above and click 'Run Slice Analysis' to explore slices interactively.")
 
 # ── inference latency monitor ──
 st.header("⚡ Inference Latency Monitor")
