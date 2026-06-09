@@ -86,79 +86,94 @@ if uploaded_file is not None:
                 st.error(f"Error: {str(e)}")
                 
 # ── MLflow metrics panel ──
-st.header("📊 Model Training Metrics")
+# st.header("📊 Model Training Metrics")
 
-mlflow_url = st.sidebar.text_input(
-    "MLflow Tracking URI",
-    value="http://localhost:5000"
-)
+# mlflow_url = st.sidebar.text_input(
+#     "MLflow Tracking URI",
+#     value="http://localhost:5000"
+# )
 
-try:
-    client = MlflowClient(tracking_uri=mlflow_url)
-    experiments = client.search_experiments()
+# try:
+#     client = MlflowClient(tracking_uri=mlflow_url)
+#     experiments = client.search_experiments()
 
-    if experiments:
-        experiment_names = [e.name for e in experiments]
-        selected_exp = st.selectbox("Select Experiment", experiment_names)
+#     if experiments:
+#         experiment_names = [e.name for e in experiments]
+#         selected_exp = st.selectbox("Select Experiment", experiment_names)
 
-        exp = client.get_experiment_by_name(selected_exp)
-        runs = client.search_runs(
-            experiment_ids=[exp.experiment_id],
-            order_by=["start_time DESC"],
-            max_results=10
-        )
+#         exp = client.get_experiment_by_name(selected_exp)
+#         runs = client.search_runs(
+#             experiment_ids=[exp.experiment_id],
+#             order_by=["start_time DESC"],
+#             max_results=10
+#         )
 
-        if runs:
-            # best run metrics
-            best_run = runs[0]
-            col1, col2, col3 = st.columns(3)
+#         if runs:
+#             # best run metrics
+#             best_run = runs[0]
+#             col1, col2, col3 = st.columns(3)
             
-            # # temporary debug
-            # st.subheader("Debug — Available Metrics")
-            # st.write(best_run.data.metrics)
-            # st.write(best_run.data.params)
+#             # # temporary debug
+#             # st.subheader("Debug — Available Metrics")
+#             # st.write(best_run.data.metrics)
+#             # st.write(best_run.data.params)
 
-            with col1:
-                st.metric(
-                    "Best Val Dice",
-                    f"{best_run.data.metrics.get('final_val_dice', 0):.4f}"
-                )
-            with col2:
-                st.metric(
-                    "Final Train Loss",
-                    "N/A"
-                )
-            with col3:
-                st.metric(
-                    "Inference Time (s)",
-                    "N/A"
-                )
+#             with col1:
+#                 st.metric(
+#                     "Best Val Dice",
+#                     f"{best_run.data.metrics.get('final_val_dice', 0):.4f}"
+#                 )
+#             with col2:
+#                 st.metric(
+#                     "Final Train Loss",
+#                     "N/A"
+#                 )
+#             with col3:
+#                 st.metric(
+#                     "Inference Time (s)",
+#                     "N/A"
+#                 )
 
-            # Dice score trend chart
-            st.subheader("Validation Dice Score")
-            st.metric(
-                label="Final Validation Dice Score",
-                value=f"{best_run.data.metrics.get('final_val_dice', 0):.4f}",
-                delta=f"{best_run.data.metrics.get('final_val_dice', 0) - 0.75:.4f} above target"
-            )
-            st.info("Per-epoch Dice trend requires re-running training with epoch-level MLflow logging enabled.")
+#             # Dice score trend chart
+#             st.subheader("Validation Dice Score")
+#             st.metric(
+#                 label="Final Validation Dice Score",
+#                 value=f"{best_run.data.metrics.get('final_val_dice', 0):.4f}",
+#                 delta=f"{best_run.data.metrics.get('final_val_dice', 0) - 0.75:.4f} above target"
+#             )
+#             st.info("Per-epoch Dice trend requires re-running training with epoch-level MLflow logging enabled.")
 
-except Exception as e:
-    st.warning(f"MLflow not connected — start mlflow ui locally to see metrics. ({str(e)})")
-else:
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Best Val Dice", "0.8987")
-    with col2:
-        st.metric("Dataset", "Task09 Spleen")
-    with col3:
-        st.metric("Target Dice", "0.75 ✓")
+# except Exception as e:
+#     st.warning(f"MLflow not connected — start mlflow ui locally to see metrics. ({str(e)})")
+# else:
+#     col1, col2, col3 = st.columns(3)
+#     with col1:
+#         st.metric("Best Val Dice", "0.8987")
+#     with col2:
+#         st.metric("Dataset", "Task09 Spleen")
+#     with col3:
+#         st.metric("Target Dice", "0.75 ✓")
 
-    st.subheader("Training Configuration")
-    st.table({
-        "Parameter": ["Model", "Epochs", "Batch Size", "Learning Rate", "Patch Size", "Loss Function"],
-        "Value": ["3D U-Net", "1000+", "2", "1e-4 → 1e-5", "96³", "DiceCELoss"]
-    })
+#     st.subheader("Training Configuration")
+#     st.table({
+#         "Parameter": ["Model", "Epochs", "Batch Size", "Learning Rate", "Patch Size", "Loss Function"],
+#         "Value": ["3D U-Net", "1000+", "2", "1e-4 → 1e-5", "96³", "DiceCELoss"]
+#     })
+    
+# Hotfix MLFlow metrics will be hardcoded for now.
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Best Val Dice", "0.8987")
+with col2:
+    st.metric("Dataset", "Task09 Spleen")
+with col3:
+    st.metric("Target Dice", "0.75 ✓")
+
+st.subheader("Training Configuration")
+st.table({
+    "Parameter": ["Model", "Epochs", "Batch Size", "Learning Rate", "Patch Size", "Loss Function"],
+    "Value": ["3D U-Net", "1000+", "2", "1e-4 → 1e-5", "96³", "DiceCELoss"]
+}) 
     
 # ── slice-by-slice viewer ──
 st.header("🔬 Interactive Slice Viewer")
