@@ -145,6 +145,20 @@ try:
 
 except Exception as e:
     st.warning(f"MLflow not connected — start mlflow ui locally to see metrics. ({str(e)})")
+else:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Best Val Dice", "0.8987")
+    with col2:
+        st.metric("Dataset", "Task09 Spleen")
+    with col3:
+        st.metric("Target Dice", "0.75 ✓")
+
+    st.subheader("Training Configuration")
+    st.table({
+        "Parameter": ["Model", "Epochs", "Batch Size", "Learning Rate", "Patch Size", "Loss Function"],
+        "Value": ["3D U-Net", "1000+", "2", "1e-4 → 1e-5", "96³", "DiceCELoss"]
+    })
     
 # ── slice-by-slice viewer ──
 st.header("🔬 Interactive Slice Viewer")
