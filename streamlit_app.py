@@ -10,6 +10,7 @@ import io
 import mlflow
 from mlflow.tracking import MlflowClient
 import plotly.graph_objects as go
+from skimage import measure
 
 
 # initialize session state variables
@@ -313,22 +314,24 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
 
         # get intensity values at spleen voxels for coloring
         intensity = ct_down[x, y, z]
+        
+        verts, faces, _, _ = measure.marching_cubes(mask_down, level=0.5)
 
+        
         fig = go.Figure(data=[
-            go.Scatter3d(
-                x=x, y=y, z=z,
-                mode="markers",
-                marker=dict(
-                    size=2,
-                    color=intensity,
-                    colorscale="Greens",
-                    opacity=0.6,
-                    colorbar=dict(title="HU Intensity")
-                ),
+            go.Mesh3d(
+                x=verts[:, 0],
+                y=verts[:, 1],
+                z=verts[:, 2],
+                i=faces[:, 0],
+                j=faces[:, 1],
+                k=faces[:, 2],
+                color="green",
+                opacity=0.7,
                 name="Spleen"
             )
         ])
-
+        
         fig.update_layout(
             title="3D Spleen Segmentation",
             scene=dict(
@@ -345,8 +348,42 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
             height=600
         )
 
+        # fig = go.Figure(data=[
+        #     go.Scatter3d(
+        #         x=x, y=y, z=z,
+        #         mode="markers",
+        #         marker=dict(
+        #             size=2,
+        #             color=intensity,
+        #             colorscale="Greens",
+        #             opacity=0.6,
+        #             colorbar=dict(title="HU Intensity")
+        #         ),
+        #         name="Spleen"
+        #     )
+        # ])
+
+        # fig.update_layout(
+        #     title="3D Spleen Segmentation",
+        #     scene=dict(
+        #         xaxis_title="X",
+        #         yaxis_title="Y",
+        #         zaxis_title="Z (Slice)",
+        #         bgcolor="black",
+        #         xaxis=dict(backgroundcolor="black", gridcolor="gray"),
+        #         yaxis=dict(backgroundcolor="black", gridcolor="gray"),
+        #         zaxis=dict(backgroundcolor="black", gridcolor="gray"),
+        #     ),
+        #     paper_bgcolor="black",
+        #     font=dict(color="white"),
+        #     height=600
+        # )
+
         st.plotly_chart(fig, use_container_width=True)
         st.caption(f"Showing {len(x):,} spleen voxels (downsampled for performance)")
+
+    #xxxxxxxxxxxxxxxxxx
+
 
     else:
         st.warning("No spleen voxels found in mask.")
