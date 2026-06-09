@@ -9,6 +9,8 @@ from PIL import Image
 import io
 import mlflow
 from mlflow.tracking import MlflowClient
+import plotly.graph_objects as go
+
 
 # initialize session state variables
 if "latency_history" not in st.session_state:
@@ -283,6 +285,75 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
         st.metric("Spleen Voxels", f"{spleen_voxels:,}")
 else:
     st.info("Upload a CT scan above and click 'Run Slice Analysis' to explore slices interactively.")
+
+
+# ── 3D volume viewer ──
+st.header("🧊 3D Volume Viewer")
+
+if "ct" in st.session_state and st.session_state["ct"] is not None:
+    ct = st.session_state["ct"]
+    mask = st.session_state["mask"]
+
+    st.markdown("Interactive 3D view of the segmentation mask.")
+
+    # downsample for performance — full resolution is too slow in browser
+    step = 3
+    ct_down = ct[::step, ::step, ::step]
+    mask_down = mask[::step, ::step, ::step]
+
+    # get coordinates of spleen voxels
+    x, y, z = np.where(mask_down == 1)
+
+    if len(x) > 0:
+        # sample points for performance
+        max_points = 5000
+        if len(x) > max_points:
+            idx = np.random.choice(len(x), max_points, replace=False)
+            x, y, z = x[idx], y[idx], z[idx]
+
+        # get intensity values at spleen voxels for coloring
+        intensity = ct_down[x, y, z]
+
+        fig = go.Figure(data=[
+            go.Scatter3d(
+                x=x, y=y, z=z,
+                mode="markers",
+                marker=dict(
+                    size=2,
+                    color=intensity,
+                    colorscale="Greens",
+                    opacity=0.6,
+                    colorbar=dict(title="HU Intensity")
+                ),
+                name="Spleen"
+            )
+        ])
+
+        fig.update_layout(
+            title="3D Spleen Segmentation",
+            scene=dict(
+                xaxis_title="X",
+                yaxis_title="Y",
+                zaxis_title="Z (Slice)",
+                bgcolor="black",
+                xaxis=dict(backgroundcolor="black", gridcolor="gray"),
+                yaxis=dict(backgroundcolor="black", gridcolor="gray"),
+                zaxis=dict(backgroundcolor="black", gridcolor="gray"),
+            ),
+            paper_bgcolor="black",
+            font=dict(color="white"),
+            height=600
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption(f"Showing {len(x):,} spleen voxels (downsampled for performance)")
+
+    else:
+        st.warning("No spleen voxels found in mask.")
+
+else:
+    st.info("Run slice analysis above to enable the 3D viewer.")
+
 
 # ── inference latency monitor ──
 st.header("⚡ Inference Latency Monitor")
