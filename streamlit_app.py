@@ -10,6 +10,19 @@ import io
 import mlflow
 from mlflow.tracking import MlflowClient
 
+# initialize session state variables
+if "latency_history" not in st.session_state:
+    st.session_state["latency_history"] = []
+
+if "ct" not in st.session_state:
+    st.session_state["ct"] = None
+
+if "mask" not in st.session_state:
+    st.session_state["mask"] = None
+
+if "spleen_slices" not in st.session_state:
+    st.session_state["spleen_slices"] = []
+
 # ── page config ──
 st.set_page_config(
     page_title="CT Segmentation Dashboard",
