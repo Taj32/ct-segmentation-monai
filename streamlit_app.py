@@ -298,7 +298,7 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
     st.markdown("Interactive 3D view of the segmentation mask.")
 
     # downsample for performance — full resolution is too slow in browser
-    step = 3
+    step = 2 #step size for downsampling (setting 3 --> 2 to reduce detail loss)
     ct_down = ct[::step, ::step, ::step]
     mask_down = mask[::step, ::step, ::step]
 
