@@ -38,7 +38,7 @@ def dicom_to_nifti(dicom_path: str, output_path: str) -> str:
     return output_path
 
 # download model from HF hub if not already present
-model_path = "checkpoints/best_model.pth"
+model_path = "checkpoints/best_model_liver_6_13.pth"
 # if not os.path.exists(model_path):
 #     os.makedirs("checkpoints", exist_ok=True)
 #     model_path = hf_hub_download(
@@ -52,7 +52,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = UNet(
     spatial_dims=3, # configure model to use 3D convolutions
     in_channels=1, # input: grayscale image
-    out_channels=2, # output: spleen and background segmentation
+    #out_channels=2, # output: spleen and background segmentation
+    out_channels=3, # output: liver, tumor, and background segmentation
     channels=(16, 32, 64, 128, 256), # Define number  f filters in each layer
     strides=(2, 2, 2, 2), # downsample
     num_res_units=2,
@@ -75,8 +76,10 @@ preprocess = Compose([
     EnsureTyped(keys=["image"]),
 ])
 
-post_pred = AsDiscrete(argmax=True, to_onehot=2)
-keep_largest = KeepLargestConnectedComponent(applied_labels=[1])
+post_pred = AsDiscrete(argmax=True, to_onehot=3)
+post_label = AsDiscrete(argmax=True, to_onehot=3)
+keep_largest = KeepLargestConnectedComponent(applied_labels=[1, 2]) # update to keep largest connected component for both liver and tumor classes (labels 1 and 2)
+#keep_largest = KeepLargestConnectedComponent(applied_labels=[1])
 
 @app.get("/")
 def root():
@@ -141,29 +144,31 @@ async def segment(file: UploadFile = File(...)):
 
         slice_idx = spleen_slices[len(spleen_slices) // 2]
 
-        # generate overlay PNG
+        # generate overlay PNG — 3 class: background / liver / tumor
         slice_ct = input_tensor[0, 0, :, :, slice_idx].cpu().numpy()
         slice_pred = vol[:, :, slice_idx]
-        plt.suptitle("Spleen Segmentation Result", fontsize=14, fontweight="bold")
-        
-        
-
+        plt.suptitle("Liver Tumor Segmentation Result", fontsize=14, fontweight="bold")
 
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
         axes[0].imshow(slice_ct, cmap="gray")
         axes[0].set_title("CT Scan")
         axes[0].axis("off")
         
-        # create a red RGBA overlay manually
-        red_overlay = np.zeros((*slice_pred.shape, 4))  # RGBA
-        red_overlay[slice_pred == 1] = [1, 0, 0, 0.5]  # bright red, 50% opacity
+        # 3-class RGBA overlay
+        # class 1 = liver (green), class 2 = tumor (red)
+        color_overlay = np.zeros((*slice_pred.shape, 4))
+        color_overlay[slice_pred == 1] = [0, 1, 0, 0.5]   # green = liver
+        color_overlay[slice_pred == 2] = [1, 0, 0, 0.7]   # red = tumor
 
         axes[1].imshow(slice_ct, cmap="gray")
-        axes[1].imshow(red_overlay)
+        axes[1].imshow(color_overlay)
         axes[1].set_title("Predicted Segmentation")
         axes[1].axis("off")
-        red_patch = mpatches.Patch(color="red", alpha=0.7, label="Spleen Prediction")
-        axes[1].legend(handles=[red_patch], loc="lower right")
+        
+        # legend for both classes
+        green_patch = mpatches.Patch(color="green", alpha=0.5, label="Liver")
+        red_patch = mpatches.Patch(color="red", alpha=0.7, label="Tumor")
+        axes[1].legend(handles=[green_patch, red_patch], loc="lower right")
 
 
         plt.tight_layout()
@@ -223,12 +228,12 @@ async def segment_data(file: UploadFile = File(...)):
         vol = output_cleaned[0].cpu().numpy()
         ct = input_tensor[0, 0].cpu().numpy()
 
-        spleen_slices = [
+        target_slices = [
             i for i in range(vol.shape[2]) if vol[:, :, i].sum() > 0
         ]
 
-        if not spleen_slices:
-            return JSONResponse({"message": "No spleen detected"})
+        if not target_slices:
+            return {"message": "No liver or tumor detected", "dice": None}
 
         # save as compressed numpy binary
         buf = io.BytesIO()
@@ -236,7 +241,7 @@ async def segment_data(file: UploadFile = File(...)):
             buf,
             ct=ct,
             mask=vol,
-            spleen_slices=np.array(spleen_slices)
+            spleen_slices=np.array(target_slices) # keep as spleen_slices for Streamlit compatability concerns (for now)
         )
         buf.seek(0)
 

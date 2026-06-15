@@ -34,7 +34,7 @@ st.set_page_config(
 )
 
 st.title("🏥 3D CT Segmentation Dashboard")
-st.markdown("Upload a CT scan to get an automated spleen segmentation using a U-Net model trained on the Medical Segmentation Decathlon.")
+st.markdown("Upload a CT scan to get an automated liver and tumor segmentation  segmentation using a U-Net model trained on the Medical Segmentation Decathlon.")
 
 # ── sidebar ──
 st.sidebar.header("Configuration")
@@ -163,20 +163,19 @@ st.header("📊 Model Training Metrics")
 #         "Value": ["3D U-Net", "1000+", "2", "1e-4 → 1e-5", "96³", "DiceCELoss"]
 #     })
     
-# Hotfix MLFlow metrics will be hardcoded for now.
+# new — updated for liver/tumor (dice will be updated after training completes)
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Best Val Dice", "0.8987")
+    st.metric("Best Val Dice", "0.7100")  # updated
 with col2:
-    st.metric("Dataset", "Task09 Spleen")
+    st.metric("Dataset", "Task03 Liver")
 with col3:
-    st.metric("Target Dice", "0.75 ✓")
-
+    st.metric("Target Dice", "0.70 ✓")  # target met
 st.subheader("Training Configuration")
 st.table({
-    "Parameter": ["Model", "Epochs", "Batch Size", "Learning Rate", "Patch Size", "Loss Function"],
-    "Value": ["3D U-Net", "1000+", "2", "1e-4 → 1e-5", "96³", "DiceCELoss"]
-}) 
+    "Parameter": ["Model", "Epochs", "Batch Size", "Learning Rate", "Patch Size", "Loss Function", "Classes"],
+    "Value": ["3D U-Net", "700+", "4", "1e-4", "96³", "DiceCELoss", "Background / Liver / Tumor"]
+})
     
 # ── slice-by-slice viewer ──
 st.header("🔬 Interactive Slice Viewer")
@@ -216,7 +215,7 @@ if uploaded_file_viewer is not None:
                     st.session_state["ct"] = ct
                     st.session_state["mask"] = mask
                     st.session_state["spleen_slices"] = spleen_slices
-                    st.success(f"Segmentation complete! Spleen found on {len(spleen_slices)} slices.")
+                    st.success(f"Segmentation complete! Liver/tumor found on {len(spleen_slices)} slices.")
 
                 else:
                     st.error(f"API error: {response.status_code}")
@@ -243,29 +242,30 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
 
     # show spleen indicator
     if slice_idx in spleen_slices:
-        st.success(f"✓ Spleen detected on slice {slice_idx}")
+        st.success(f"✓ Liver/tumor detected on slice {slice_idx}")
     else:
-        st.info(f"No spleen on slice {slice_idx} — spleen visible on slices {spleen_slices[0]}–{spleen_slices[-1]}")
+        st.info(f"No liver/tumor on slice {slice_idx} — liver/tumor visible on slices {spleen_slices[0]}–{spleen_slices[-1]}")
 
     # plot three panels
     slice_ct = ct[:, :, slice_idx]
     slice_mask = mask[:, :, slice_idx]
 
-    green_overlay = np.zeros((*slice_mask.shape, 4))
-    green_overlay[slice_mask == 1] = [0, 1, 0, 0.7]
+    color_overlay = np.zeros((*slice_mask.shape, 4))
+    color_overlay[slice_mask == 1] = [0, 1, 0, 0.5]   # green = liver
+    color_overlay[slice_mask == 2] = [1, 0, 0, 0.7]   # red = tumor
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-
     axes[0].imshow(slice_ct, cmap="gray")
     axes[0].set_title(f"CT Scan — Slice {slice_idx}", fontsize=14)
     axes[0].axis("off")
 
     axes[1].imshow(slice_ct, cmap="gray")
-    axes[1].imshow(green_overlay)
+    axes[1].imshow(color_overlay)
     axes[1].set_title("Predicted Segmentation", fontsize=14)
     axes[1].axis("off")
-    green_patch = mpatches.Patch(color="green", alpha=0.7, label="Spleen")
-    axes[1].legend(handles=[green_patch], loc="lower right")
+    green_patch = mpatches.Patch(color="green", alpha=0.5, label="Liver")
+    red_patch = mpatches.Patch(color="red", alpha=0.7, label="Tumor")
+    axes[1].legend(handles=[green_patch, red_patch], loc="lower right")
 
     axes[2].imshow(slice_mask, cmap="Greens")
     axes[2].set_title("Segmentation Mask", fontsize=14)
@@ -280,10 +280,10 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
     with col1:
         st.metric("Total Slices", ct.shape[2])
     with col2:
-        st.metric("Spleen Slices", len(spleen_slices))
+        st.metric("Liver/Tumor Slices", len(spleen_slices))
     with col3:
         spleen_voxels = int(mask.sum())
-        st.metric("Spleen Voxels", f"{spleen_voxels:,}")
+        st.metric("Liver/Tumor Voxels", f"{spleen_voxels:,}")
 else:
     st.info("Upload a CT scan above and click 'Run Slice Analysis' to explore slices interactively.")
 
@@ -315,38 +315,67 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
         # get intensity values at spleen voxels for coloring
         intensity = ct_down[x, y, z]
         
-        verts, faces, _, _ = measure.marching_cubes(mask_down, level=0.5)
+        # new — separate liver and tumor meshes
+        fig_data = []
 
+        # liver mesh (class 1)
+        liver_mask = (mask_down == 1).astype(float)
+        if liver_mask.sum() > 0:
+            try:
+                liver_verts, liver_faces, _, _ = measure.marching_cubes(liver_mask, level=0.5)
+                fig_data.append(go.Mesh3d(
+                    x=liver_verts[:, 0],
+                    y=liver_verts[:, 1],
+                    z=liver_verts[:, 2],
+                    i=liver_faces[:, 0],
+                    j=liver_faces[:, 1],
+                    k=liver_faces[:, 2],
+                    color="green",
+                    opacity=0.4,
+                    name="Liver"
+                ))
+            except Exception:
+                pass
+            
+        # tumor mesh (class 2)
+        tumor_mask = (mask_down == 2).astype(float)
+        if tumor_mask.sum() > 0:
+            try:
+                tumor_verts, tumor_faces, _, _ = measure.marching_cubes(tumor_mask, level=0.5)
+                fig_data.append(go.Mesh3d(
+                    x=tumor_verts[:, 0],
+                    y=tumor_verts[:, 1],
+                    z=tumor_verts[:, 2],
+                    i=tumor_faces[:, 0],
+                    j=tumor_faces[:, 1],
+                    k=tumor_faces[:, 2],
+                    color="red",
+                    opacity=0.8,
+                    name="Tumor"
+                ))
+            except Exception:
+                pass
         
-        fig = go.Figure(data=[
-            go.Mesh3d(
-                x=verts[:, 0],
-                y=verts[:, 1],
-                z=verts[:, 2],
-                i=faces[:, 0],
-                j=faces[:, 1],
-                k=faces[:, 2],
-                color="green",
-                opacity=0.7,
-                name="Spleen"
+        if fig_data:
+            fig = go.Figure(data=fig_data)
+            fig.update_layout(
+                title="3D Liver & Tumor Segmentation",
+                scene=dict(
+                    xaxis_title="X",
+                    yaxis_title="Y",
+                    zaxis_title="Z (Slice)",
+                    bgcolor="black",
+                    xaxis=dict(backgroundcolor="black", gridcolor="gray"),
+                    yaxis=dict(backgroundcolor="black", gridcolor="gray"),
+                    zaxis=dict(backgroundcolor="black", gridcolor="gray"),
+                ),
+                paper_bgcolor="black",
+                font=dict(color="white"),
+                height=600
             )
-        ])
-        
-        fig.update_layout(
-            title="3D Spleen Segmentation",
-            scene=dict(
-                xaxis_title="X",
-                yaxis_title="Y",
-                zaxis_title="Z (Slice)",
-                bgcolor="black",
-                xaxis=dict(backgroundcolor="black", gridcolor="gray"),
-                yaxis=dict(backgroundcolor="black", gridcolor="gray"),
-                zaxis=dict(backgroundcolor="black", gridcolor="gray"),
-            ),
-            paper_bgcolor="black",
-            font=dict(color="white"),
-            height=600
-        )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("No liver or tumor voxels found for 3D rendering.")
 
         # fig = go.Figure(data=[
         #     go.Scatter3d(
@@ -428,21 +457,19 @@ st.header("ℹ️ Model Information")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Architecture")
     st.markdown("""
     - **Model:** 3D U-Net
     - **Framework:** MONAI
-    - **Dataset:** Medical Segmentation Decathlon (Task09 Spleen)
+    - **Dataset:** Medical Segmentation Decathlon (Task03 Liver)
     - **Input:** 3D CT volumes (NIfTI format)
-    - **Output:** Binary segmentation mask
+    - **Output:** 3-class mask (background / liver / tumor)
     """)
 
 with col2:
-    st.subheader("Performance")
     st.markdown("""
-    - **Validation Dice Score:** 0.8987
-    - **Target Dice:** 0.75 ✓
-    - **Inference:** Sliding window (96³ patches)
-    - **Post-processing:** KeepLargestConnectedComponent
-    - **Deployment:** HF Spaces (CPU)
+    - **Validation Dice Score:** 0.66+ (retraining in progress)
+    - **Target Dice:** 0.70
+    - **Inference:** Sliding window (96³ patches, Gaussian weighting)
+    - **Post-processing:** KeepLargestConnectedComponent (liver + tumor)
+    - **Deployment:** HF Spaces (CPU) + Streamlit Cloud
     """)
