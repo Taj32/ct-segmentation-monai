@@ -180,6 +180,7 @@ st.table({
 # ── slice-by-slice viewer ──
 st.header("🔬 Interactive Slice Viewer")
 st.markdown("Upload a CT scan to explore segmentation results slice by slice.")
+st.warning("⚠️ HF free tier has upload limits — use files under 50MB for best results. Larger files may time out.")
 
 uploaded_file_viewer = st.file_uploader(
     "Choose a NIfTI file for slice viewer",
@@ -215,6 +216,12 @@ if uploaded_file_viewer is not None:
                     st.session_state["ct"] = ct
                     st.session_state["mask"] = mask
                     st.session_state["spleen_slices"] = spleen_slices
+                    
+                    # debugging information
+                    st.write(f"Unique mask values: {np.unique(mask).tolist()}")
+                    st.write(f"Liver voxels (class 1): {int((mask == 1).sum())}")
+                    st.write(f"Tumor voxels (class 2): {int((mask == 2).sum())}")
+                    
                     st.success(f"Segmentation complete! Liver/tumor found on {len(spleen_slices)} slices.")
 
                 else:
@@ -373,7 +380,8 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
                 font=dict(color="white"),
                 height=600
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="3d_view")
+            st.caption(f"Showing {len(x):,} spleen voxels (downsampled for performance)")
         else:
             st.warning("No liver or tumor voxels found for 3D rendering.")
 
@@ -408,7 +416,7 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
         #     height=600
         # )
 
-        st.plotly_chart(fig, use_container_width=True)
+        #st.plotly_chart(fig, use_container_width=True)
         st.caption(f"Showing {len(x):,} spleen voxels (downsampled for performance)")
 
     #xxxxxxxxxxxxxxxxxx

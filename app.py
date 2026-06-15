@@ -193,6 +193,14 @@ async def segment_data(file: UploadFile = File(...)):
             status_code=400,
             detail="Only .nii, .nii.gz, or .dcm files accepted"
         )
+    
+    # check file size — HF free tier struggles with files over 50MB
+    content = await file.read()
+    if len(content) > 50 * 1024 * 1024:  # 50MB limit
+        raise HTTPException(
+            status_code=413,
+            detail="File too large for free tier — please use a file under 50MB"
+        )
 
     is_dicom = file.filename.endswith(".dcm")
     suffix = ".dcm" if is_dicom else (
