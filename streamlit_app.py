@@ -207,7 +207,7 @@ if uploaded_file_viewer is not None:
                 if response.status_code == 200:
                     # load numpy data
                     buf = io.BytesIO(response.content)
-                    data = np.load(buf)
+                    data = np.load(buf) 
                     ct = data["ct"]
                     mask = data["mask"]
                     spleen_slices = data["spleen_slices"].tolist()
@@ -417,13 +417,13 @@ if "ct" in st.session_state and st.session_state["ct"] is not None:
         # )
 
         #st.plotly_chart(fig, use_container_width=True)
-        st.caption(f"Showing {len(x):,} spleen voxels (downsampled for performance)")
+        st.caption(f"Showing {len(x):,} liver voxels (downsampled for performance)")
 
     #xxxxxxxxxxxxxxxxxx
 
 
     else:
-        st.warning("No spleen voxels found in mask.")
+        st.warning("No liver voxels found in mask.")
 
 else:
     st.info("Run slice analysis above to enable the 3D viewer.")

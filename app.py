@@ -130,7 +130,17 @@ async def segment(file: UploadFile = File(...)):
             )
 
         # post process
-        output_discrete = torch.argmax(output, dim=1, keepdim=True)
+        #output_discrete = torch.argmax(output, dim=1, keepdim=True)
+        # use raw probabilities with lower threshold for tumor detection
+        # lower tumor threshold (0.3) catches more tumor voxels than standard argmax
+        probs = torch.softmax(output, dim=1)
+        output_discrete = torch.zeros(
+            (1, 1, *probs.shape[2:]), 
+            dtype=torch.long, 
+            device=device
+        )
+        output_discrete[probs[0:1, 1:2] > 0.5] = 1   # liver — standard threshold
+        output_discrete[probs[0:1, 2:3] > 0.3] = 2   # tumor — lower threshold to catch more
         output_cleaned = keep_largest(output_discrete[0])
 
         # find spleen slices and pick middle one
@@ -230,7 +240,18 @@ async def segment_data(file: UploadFile = File(...)):
             )
 
         # post process
-        output_discrete = torch.argmax(output, dim=1, keepdim=True)
+        #output_discrete = torch.argmax(output, dim=1, keepdim=True)
+        
+        # use raw probabilities with lower threshold for tumor detection
+        # lower tumor threshold (0.3) catches more tumor voxels than standard argmax
+        probs = torch.softmax(output, dim=1)
+        output_discrete = torch.zeros(
+            (1, 1, *probs.shape[2:]), 
+            dtype=torch.long, 
+            device=device
+        )
+        output_discrete[probs[0:1, 1:2] > 0.5] = 1   # liver — standard threshold
+        output_discrete[probs[0:1, 2:3] > 0.3] = 2   # tumor — lower threshold to catch more
         output_cleaned = keep_largest(output_discrete[0])
 
         vol = output_cleaned[0].cpu().numpy()
