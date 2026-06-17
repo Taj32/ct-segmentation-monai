@@ -87,7 +87,12 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "model_path": model_path,
+        "device": str(device),
+        "out_channels": 3
+    }
 
 @app.post("/segment")
 async def segment(file: UploadFile = File(...)):
