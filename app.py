@@ -126,6 +126,9 @@ async def segment(file: UploadFile = File(...)):
         tmp.flush()  # force write to disk
         os.fsync(tmp.fileno())  # ensure OS writes to disk
         tmp_path = tmp.name
+        
+        
+    
 
     try:
         
@@ -241,16 +244,22 @@ async def segment_data(file: UploadFile = File(...)):
             detail="File too large for free tier — please use a file under 50MB"
         )
 
-    is_dicom = file.filename.endswith(".dcm")
-    suffix = ".dcm" if is_dicom else (
-        ".nii.gz" if file.filename.endswith(".nii.gz") else ".nii"
-    )
-
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False, mode='wb') as tmp:
         tmp.write(content)
         tmp.flush()  # force write to disk
         os.fsync(tmp.fileno())  # ensure OS writes to disk
         tmp_path = tmp.name
+
+    # verify file was actually written to disk
+    written_size = os.path.getsize(tmp_path)
+    print(f"Content received: {len(content)} bytes, Written to disk: {written_size} bytes")
+
+    if written_size == 0:
+        raise HTTPException(
+            status_code=500,
+            detail=f"File write failed — received {len(content)} bytes but wrote 0"
+        )
+
 
     try:
         if is_dicom:
