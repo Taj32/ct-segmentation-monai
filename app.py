@@ -97,8 +97,6 @@ def health():
 @app.post("/segment")
 async def segment(file: UploadFile = File(...)):
     
-    
-
     # validate file type
     if not file.filename.endswith((".nii", ".nii.gz", ".dcm")):
         raise HTTPException(
@@ -110,10 +108,23 @@ async def segment(file: UploadFile = File(...)):
     suffix = ".dcm" if is_dicom else (
         ".nii.gz" if file.filename.endswith(".nii.gz") else ".nii"
     )
+    
+    content = await file.read()
+    
+    # check file size - 0 bytes is not allowed
+    if len(content) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file is empty — please try again"
+        )
+    
+    
+
 
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False, mode='wb') as tmp:
-        content = await file.read()
         tmp.write(content)
+        tmp.flush()  # force write to disk
+        os.fsync(tmp.fileno())  # ensure OS writes to disk
         tmp_path = tmp.name
 
     try:
@@ -209,8 +220,21 @@ async def segment_data(file: UploadFile = File(...)):
             detail="Only .nii, .nii.gz, or .dcm files accepted"
         )
     
-    # check file size — HF free tier struggles with files over 50MB
+    is_dicom = file.filename.endswith(".dcm")
+    suffix = ".dcm" if is_dicom else (
+        ".nii.gz" if file.filename.endswith(".nii.gz") else ".nii"
+    )
+    
     content = await file.read()
+
+    # check file size - 0 bytes is not allowed
+    if len(content) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file is empty — please try again"
+        )
+    
+    # check file size — HF free tier struggles with files over 50MB
     if len(content) > 50 * 1024 * 1024:  # 50MB limit
         raise HTTPException(
             status_code=413,
@@ -223,8 +247,9 @@ async def segment_data(file: UploadFile = File(...)):
     )
 
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False, mode='wb') as tmp:
-        content = await file.read()
         tmp.write(content)
+        tmp.flush()  # force write to disk
+        os.fsync(tmp.fileno())  # ensure OS writes to disk
         tmp_path = tmp.name
 
     try:
