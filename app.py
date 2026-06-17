@@ -38,7 +38,7 @@ def dicom_to_nifti(dicom_path: str, output_path: str) -> str:
     return output_path
 
 # download model from HF hub if not already present
-model_path = "checkpoints/best_model_liver_6_13.pth"
+model_path = "checkpoints/best_model_liver_6_16.pth"
 # if not os.path.exists(model_path):
 #     os.makedirs("checkpoints", exist_ok=True)
 #     model_path = hf_hub_download(

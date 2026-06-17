@@ -4,7 +4,7 @@ import os
 os.makedirs("checkpoints", exist_ok=True)
 hf_hub_download(
     repo_id="Hipps/ct-segmenetation-spleen",
-    filename="best_model_liver_6_13.pth",
+    filename="best_model_liver_6_16.pth",
     local_dir="checkpoints"
 )
 print("Model downloaded successfully")

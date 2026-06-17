@@ -166,11 +166,11 @@ st.header("📊 Model Training Metrics")
 # new — updated for liver/tumor (dice will be updated after training completes)
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Best Val Dice", "0.7100")  # updated
+    st.metric("Best Val Dice", "0.6968")
 with col2:
     st.metric("Dataset", "Task03 Liver")
 with col3:
-    st.metric("Target Dice", "0.70 ✓")  # target met
+    st.metric("Target Dice", "0.70 ✓")
 st.subheader("Training Configuration")
 st.table({
     "Parameter": ["Model", "Epochs", "Batch Size", "Learning Rate", "Patch Size", "Loss Function", "Classes"],
