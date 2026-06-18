@@ -58,10 +58,9 @@ if uploaded_file is not None:
         with st.spinner("Running inference... this may take a few minutes on CPU"):
             try:
                 start_time = time.time()
-                file_bytes = uploaded_file.getvalue()
                 response = requests.post(
                     f"{api_url}/segment",
-                    files={"file": (uploaded_file.name, io.BytesIO(file_bytes), "application/octet-stream")},
+                    files={"file": (uploaded_file.name, uploaded_file.getvalue())},
                     timeout=600
                 )
                 latency = time.time() - start_time
