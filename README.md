@@ -32,6 +32,18 @@ Segmentation Overlay PNG
 ↓
 Streamlit Dashboard
 
+```mermaid
+graph LR
+    A[CT Scan Upload] --> B[FastAPI /segment]
+    B --> C[MONAI Preprocessing]
+    C --> D[3D U-Net Inference]
+    D --> E[Sliding Window 96³]
+    E --> F[Softmax Thresholding]
+    F --> G[KeepLargestConnected]
+    G --> H[Segmentation Overlay]
+    H --> I[Streamlit Dashboard]
+```
+
 ## 🚀 Quick Start
 
 ```bash
