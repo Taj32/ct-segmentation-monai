@@ -14,7 +14,7 @@ architecture trained on the Medical Segmentation Decathlon.
 - **Dashboard:** https://ct-segmentation-monai-k8fnmcjqfv8h2e5ehoddta.streamlit.app
 
 ## 🏗️ Architecture
-```markdown
+<!-- ```markdown
 ```text
 CT Upload (.nii.gz)
         ↓
@@ -34,8 +34,22 @@ Segmentation Overlay PNG
         ↓
 Streamlit Dashboard
 ```
-```
+``` -->
 
+```mermaid
+graph LR
+    A[CT Scan Upload] --> B[FastAPI /segment]
+    B --> C[MONAI Preprocessing]
+    C --> D[3D U-Net Inference]
+    D --> E[Sliding Window 96³]
+    E --> F[Softmax Thresholding]
+    F --> G[KeepLargestConnected]
+    G --> H[Segmentation Overlay]
+    H --> I[Streamlit Dashboard]
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style H fill:#bbf,stroke:#333,stroke-width:2px
+```
 
 ## 🚀 Quick Start
 
