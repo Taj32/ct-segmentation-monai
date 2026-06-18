@@ -7,8 +7,6 @@ import matplotlib.patches as mpatches
 import numpy as np
 from PIL import Image
 import io
-import mlflow
-from mlflow.tracking import MlflowClient
 import plotly.graph_objects as go
 from skimage import measure
 

@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.responses import FileResponse
 import torch
 import tempfile
 import os
@@ -15,12 +14,10 @@ from monai.transforms import (
 from monai.inferers import sliding_window_inference
 import matplotlib.patches as mpatches
 import SimpleITK as sitk
-from huggingface_hub import hf_hub_download
 from contextlib import asynccontextmanager
 
 import io
-import numpy as np
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response, FileResponse
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
