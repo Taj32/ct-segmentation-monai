@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pytest torch monai numpy nibabel fastapi httpx
+
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check app.py streamlit_app.py --ignore E501
+
+      - name: Run tests
+        run: pytest tests/ -v
