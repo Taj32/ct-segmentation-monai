@@ -14,35 +14,28 @@ architecture trained on the Medical Segmentation Decathlon.
 - **Dashboard:** https://ct-segmentation-monai-k8fnmcjqfv8h2e5ehoddta.streamlit.app
 
 ## 🏗️ Architecture
+```markdown
+```text
 CT Upload (.nii.gz)
-↓
+        ↓
 FastAPI /segment endpoint
-↓
+        ↓
 MONAI Preprocessing
 (Spacingd → Orientationd → ScaleIntensityRanged)
-↓
+        ↓
 3D U-Net (96³ sliding window patches)
-↓
+        ↓
 Softmax + Threshold
 (Liver > 0.5, Tumor > 0.3)
-↓
+        ↓
 KeepLargestConnectedComponent
-↓
+        ↓
 Segmentation Overlay PNG
-↓
+        ↓
 Streamlit Dashboard
-
-```mermaid
-graph LR
-    A[CT Scan Upload] --> B[FastAPI /segment]
-    B --> C[MONAI Preprocessing]
-    C --> D[3D U-Net Inference]
-    D --> E[Sliding Window 96³]
-    E --> F[Softmax Thresholding]
-    F --> G[KeepLargestConnected]
-    G --> H[Segmentation Overlay]
-    H --> I[Streamlit Dashboard]
 ```
+```
+
 
 ## 🚀 Quick Start
 
@@ -75,6 +68,7 @@ Visit http://localhost:8000/docs to upload a CT scan and get segmentation result
 | CI/CD | GitHub Actions |
 
 ## 📁 Project Structure
+```text
 ct-segmentation-monai/
 ├── app.py             # FastAPI endpoint
 ├── streamlit_app.py   # Streamlit dashboard
@@ -84,7 +78,8 @@ ct-segmentation-monai/
 ├── requirements.txt
 ├── MODEL_CARD.md
 └── tests/
-└── test_model.py
+    └── test_model.py
+```
 
 ## 📋 Model Card
 See [MODEL_CARD.md](MODEL_CARD.md) for full documentation including
