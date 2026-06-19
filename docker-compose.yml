@@ -1,5 +1,7 @@
 version: "3.8"
-
+# Docker Compose file for the CT Segmentation App
+# 1. Start the fastapi api
+# 2. Start the mlflow tracking server
 services:
   #launch container from dockerfile in current directory
   seg-api:

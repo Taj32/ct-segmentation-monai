@@ -1,9 +1,11 @@
+#imports
 from huggingface_hub import hf_hub_download
 import os
 
 print("starting model download...")
 os.makedirs("checkpoints", exist_ok=True)
 
+# docker container on huggingface spaces downloads the model
 try:
     path = hf_hub_download(
         repo_id="Hipps/ct-segmenetation-spleen",
