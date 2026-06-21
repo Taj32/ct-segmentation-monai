@@ -21,6 +21,7 @@ architecture trained on the Medical Segmentation Decathlon.
 ## 🔴 Live Demo
 - **API:** https://Hipps-ct-segmentation-monai.hf.space/docs
 - **Dashboard:** https://ct-segmentation-monai-k8fnmcjqfv8h2e5ehoddta.streamlit.app
+- **Demo Video:** https://www.youtube.com/watch?v=GoKC0avQY2g
 
 ## 🏗️ Architecture
 ```markdown
