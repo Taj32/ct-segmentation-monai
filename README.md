@@ -1,3 +1,12 @@
+---
+title: CT Segmentation MONAI
+emoji: 🏥
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # 3D CT Liver & Tumor Segmentation Platform
 
 ![CI](https://github.com/Taj32/ct-segmentation-monai/actions/workflows/ci.yml/badge.svg)
