@@ -136,7 +136,7 @@ with col3:
 st.subheader("Training Configuration")
 st.table({
     "Parameter": ["Model", "Epochs", "Batch Size", "Learning Rate", "Patch Size", "Loss Function", "Classes"],
-    "Value":     ["3D U-Net", "700+", "4", "1e-4", "96³", "Tversky Loss + DiceCELoss", "Background / Liver / Tumor"]
+    "Value":     ["3D U-Net", "1000", "4", "1e-4", "96³", "Tversky Loss + DiceCELoss", "Background / Liver / Tumor"]
 })
 
 
