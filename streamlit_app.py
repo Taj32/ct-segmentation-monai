@@ -127,7 +127,7 @@ st.header("📊 Model Training Metrics")
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Best Val Dice", "0.6968")
+    st.metric("Best Val Dice", "0.7023")  # Most Updated Model
 with col2:
     st.metric("Dataset", "Task03 Liver")
 with col3:

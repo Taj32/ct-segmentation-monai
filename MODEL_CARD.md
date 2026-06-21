@@ -29,7 +29,7 @@
 |-------|-----------|
 | Liver | ~0.85 (estimated) |
 | Tumor | Detected (class imbalance present) |
-| **Overall Val Dice** | **0.6968** |
+| **Overall Val Dice** | **0.7023** |
 
 > Note: Dice is averaged across liver and tumor classes excluding background.
 > Tumor detection is limited by class imbalance — tumor voxels represent <5% of volume.

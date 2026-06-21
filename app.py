@@ -67,7 +67,7 @@ def dicom_to_nifti(dicom_path: str, output_path: str) -> str:
 # ── Model Loading ──────────────────────────────────────────────────────────────
 # Model is downloaded from HF model hub at Docker build time via download_model.py
 # and stored at this path inside the container.
-model_path = "checkpoints/best_model_liver_6_16.pth"
+model_path = "checkpoints/best_model_liver_6_19.pth"
 
 # Use GPU if available, otherwise fall back to CPU (HF free tier is CPU-only)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

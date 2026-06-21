@@ -9,7 +9,7 @@ os.makedirs("checkpoints", exist_ok=True)
 try:
     path = hf_hub_download(
         repo_id="Hipps/ct-segmenetation-spleen",
-        filename="best_model_liver_6_16.pth",
+        filename="best_model_liver_6_19.pth",
         local_dir="checkpoints"
     )
     print(f"Downloaded to: {path}")

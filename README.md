@@ -48,7 +48,7 @@ Visit https://ct-segmentation-monai-k8fnmcjqfv8h2e5ehoddta.streamlit.app/ to upl
 ## 📊 Model Performance
 | Metric | Value |
 |--------|-------|
-| Val Dice Score | 0.6968 |
+| Val Dice Score | 0.7023 |
 | Dataset | Medical Segmentation Decathlon Task03 |
 | Classes | Background / Liver / Tumor |
 | Architecture | 3D U-Net (MONAI) |
