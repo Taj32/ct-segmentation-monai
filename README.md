@@ -48,7 +48,7 @@ Streamlit Dashboard
 ## 🚀 Quick Start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ct-segmentation-monai
+git clone https://github.com/Taj32/ct-segmentation-monai
 cd ct-segmentation-monai
 docker-compose up
 ```
