@@ -28,7 +28,7 @@
 | Class | Dice Score |
 |-------|-----------|
 | Liver | ~0.85 (estimated) |
-| Tumor | 0.65 (class imbalance present) |
+| Tumor | 0.55 (class imbalance present) |
 | **Overall Val Dice** | **0.7023** |
 
 > Note: Dice is averaged across liver and tumor classes excluding background.
